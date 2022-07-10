@@ -25,9 +25,9 @@ Oh no, it's just a python script, you don't need to rely on other environments, 
 
 ## Screenshot
 
-![image-20220710222953578](/Users/hnhuangjingyu/Library/Application Support/typora-user-images/image-20220710222953578.png)
+![image-20220710222953578](./image-20220710222953578.png)
 
-![image-20220710223410436](/Users/hnhuangjingyu/Library/Application Support/typora-user-images/image-20220710223410436.png)
+![image-20220710223410436](./image-20220710223410436.png)
 
 ## Conclusion
 
