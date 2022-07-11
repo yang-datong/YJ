@@ -20,6 +20,7 @@ color_format_value_bule = "34"
 color_format_value_pink = "35"
 color_format_value_cyan = "36"
 init_segment_address_tag  = "$$$$INIT_SEGMENT$$$$"
+clear_tag = "$$$$clear_tag$$$$"
 architecture_bit = 32  #架构位数 目前只是在32位lib中测试过 
 step = 32/8 
 payload = ""
@@ -38,6 +39,15 @@ def show_head_view_tips_info_color():
 #显示一条分割线
 def show_line_view():
     print("─"*int(width - end_line_len - int(len(message_tag))) + "\033[36m"+message_tag+"\033[0m"+"─"*end_line_len+"\n")
+
+def check_is_need_clear_view():
+    if clear_tag in payload:
+        print("\n"*100)
+        print("\033[32m{0}\033[0m".format(wecome))
+        return True
+    else:
+        return False 
+
 
 #检查是否需要改变分割线的标签
 def check_is_view_tag(message):
@@ -136,6 +146,8 @@ def on_message(message,data):
     if message['type'] == 'send':
         global payload
         check_is_view_tag(message) 
+        if(check_is_need_clear_view()==True):
+            return
         if(check_is_init_segment_address() == True):
             return
         show_line_view()

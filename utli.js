@@ -9,6 +9,7 @@ var view_stack = " stack "
 var view_code = " code "
 var step = 4
 var init_segment_address_tag  = "$$$$INIT_SEGMENT$$$$"
+var clear_tag = "$$$$clear_tag$$$$"
 
 const log = (...info) => {
     var befor = new Array(_width - end_line_len - message_tag.length + 1).join("=")
@@ -16,19 +17,40 @@ const log = (...info) => {
     console.log(befor + message_tag + end + "\n")
 	console.log(...info);
 }
+
 const dump = (...ptr) => { 
 	if(ptr[1] == null)
 		return hexdump(ptr[0],{offset:0,length:0x30,header:true,ansi:true})
 	else
 		return hexdump(ptr[0],{offset:0,length:ptr[1],header:true,ansi:true})
 }
-
 //-------------------------init-------------------------------
 rpc.exports.init = config_info => { _width = config_info}
 //findAll("初始化之前",lib)
 //setTimeout((v0,v1) => {findAll(v0,v1)},1700,"初始化之后",lib)
-//send(wecome)
 
+//用于Interceptor.attach的封装
+function b(...args){
+	var addr = args[0]
+	var on_enter = args[1]
+	var on_leave = args[2]
+	Interceptor.attach(addr,{
+            onEnter(args){
+				send(clear_tag)
+				show_view(this)
+				if(on_enter != undefined)
+					on_enter(this.context)
+            },onLeave(ret){
+				if(on_leave != undefined)
+					on_leave(this.context)
+			}
+        })
+}
+
+//以更简洁的方式调用（设置别名)
+function tele (...args){ show_telescope_view(...args)}
+
+//显示一个指针视图
 function show_telescope_view(...args){
 	var data = ""
 	var addr = args[0]
@@ -48,6 +70,7 @@ function show_telescope_view(...args){
 	else
 		send(data)
 }
+
 function show_registers(...args){
 	var context = args[0]
 	var data = ""
