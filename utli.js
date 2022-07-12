@@ -34,10 +34,13 @@ function b(...args){
 	var addr = args[0]
 	var on_enter = args[1]
 	var on_leave = args[2]
+	var is_clear = args[3]
+
 	Interceptor.attach(addr,{
             onEnter(args){
+				if(is_clear != undefined)
 				send(clear_tag)
-				show_view(this)
+				//show_view(this.context)
 				if(on_enter != undefined)
 					on_enter(this.context)
             },onLeave(ret){
@@ -49,13 +52,14 @@ function b(...args){
 
 //以更简洁的方式调用（设置别名)
 function tele (...args){ show_telescope_view(...args)}
+function ls (ctx){ show_view(ctx)}
 
 //显示一个指针视图
 function show_telescope_view(...args){
 	var data = ""
 	var addr = args[0]
 	var _addr , ptr
-	for(var i = 0 ; i < 8; i++){
+	for(var i = 0 ; i < 10; i++){
 		_addr = addr.readPointer()
 		try{
 			ptr = _addr.readPointer()
@@ -95,8 +99,7 @@ function init_segment_address(context){
 }
 
 
-function show_view(curr_content){
-	var context = curr_content.context
+function show_view(context){
 	init_segment_address(context)
 	show_registers(context,view_registers)
 	show_telescope_view(context.sp,view_stack)
