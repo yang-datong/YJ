@@ -19,16 +19,46 @@ const log = (...info) => {
 }
 
 const dump = (...ptr) => { 
-	if(ptr[1] == null)
-		return hexdump(ptr[0],{offset:0,length:0x30,header:true,ansi:true})
+	if(ptr[1] == undefined)
+		return send(hexdump(ptr[0],{offset:0,length:0x30,header:true,ansi:true}))
 	else
-		return hexdump(ptr[0],{offset:0,length:ptr[1],header:true,ansi:true})
+		return send(hexdump(ptr[0],{offset:0,length:ptr[1],header:true,ansi:true}))
 }
 //-------------------------init-------------------------------
 rpc.exports.init = config_info => { _width = config_info}
+//这里是配置信息 需要进行配置上下文对象 往后会对64位so进行支持!!!
+/**
+		send("id->"+Process.id +
+			"\narch->"+Process.arch + 
+			"\nplatform->"+Process.platform +
+			"\npageSize->"+Process.pageSize +
+			"\nisDebuggerAttached->"+Process.isDebuggerAttached()+
+			"\ngetCurrentThreadId->"+Process.getCurrentThreadId()+
+			"\npointerSize->"+Process.pointerSize )
+			*/
 //findAll("初始化之前",lib)
 //setTimeout((v0,v1) => {findAll(v0,v1)},1700,"初始化之后",lib)
 
+//-------------------------alias-------------------------------
+//以更简洁的方式调用（设置别名)
+function tele(...args){ show_telescope_view(...args)}
+function ls(ctx){ show_view(ctx)}
+
+//-------------------------func-------------------------------
+//监控内存数据
+function watch(addr,len,lib){
+	MemoryAccessMonitor.enable({base:addr,size:len},{
+		onAccess(details){
+			send("operation->"+details.operation+
+				"\nfrom->"+details.from+
+				"\naddress->"+(details.address)+
+				"\nrangeIndex->"+details.rangeIndex+
+				"\npageIndex->"+details.pageIndex+
+				"\npagesCompleted->"+details.pagesCompleted+
+				"\npagesTotal->"+details.pagesTotal
+				)
+		}})
+}
 //用于Interceptor.attach的封装
 function b(...args){
 	var addr = args[0]
@@ -50,9 +80,6 @@ function b(...args){
         })
 }
 
-//以更简洁的方式调用（设置别名)
-function tele (...args){ show_telescope_view(...args)}
-function ls (ctx){ show_view(ctx)}
 
 //显示一个指针视图
 function show_telescope_view(...args){
@@ -113,6 +140,10 @@ function findAll(str,lib){
 	}		
 }
 //------------------------- 栈回溯 -------------------------
+//
+//function printStack_so(ctx){
+//	send('Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+//}
 function printStack(){
 	console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
 }
@@ -148,4 +179,13 @@ function hook_libart() {
                 // 获取到指定 jni 方法地址
                 GetStringUTFChars_addr = symbols[i].address;
             }}}
+}
+
+//------------------------- 保存数据到文件-------------------------
+function writeFile(content,file_name) {
+	var file = new File("/sdcard/"+file_name,"w+");//a+表示追加内容，此处的模式和c语言的fopen函数模式相同
+	file.write(content);
+	file.flush()
+	file.close();
+	send("save: "+file_name+" is done!!")
 }

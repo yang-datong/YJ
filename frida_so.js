@@ -1,60 +1,49 @@
 //-------------------------define-------------------------------
 var idx = 0
-//-------------------------mian-------------------------------
 var width,mheight,mwidth
 var size
 
-libByteVC1_dec_so("libByteVC1_dec.so")
-libttheif_dec_so("libttheif_dec.so")
-
+//-------------------------mian-------------------------------
+//libByteVC1_dec_so("libByteVC1_dec.so")
+//libttheif_dec_so("libttheif_dec.so")
+   //使用Java hook会导致明显延迟！！！！！！
+Java.perform(()=>{
+	Java.use("com.bytedance.fresco.nativeheif.Heif").toRgba.overload('[B', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int').implementation = function(v0,v1,v2,v3,v4,v5,v6,v7){
+		send("java_size->"+v1)
+		return  this.toRgba(v0,v1,v2,v3,v4,v5,v6,v7)
+	}	
+})
 //-------------------------func-------------------------------
 function libByteVC1_dec_so(so){
 	var lib = Module.findBaseAddress(so)
 	while(lib == null){
 		lib = Module.findBaseAddress(so)
 	}
-	byteVC1_dec_decode(lib)
-	byteVC1_dec_create(lib)
+	//hook(lib)
 }
-
 
 function libttheif_dec_so(so){
 	var lib = Module.findBaseAddress(so)
 	while(lib == null){
 		lib = Module.findBaseAddress(so)
 	}
-	//bytevc1_get_ttframe_infos(lib)
-	//get_width_height(lib)
-	//save_output_buff(lib)
-	//get_ByteVC1_get_frame_data_return()
-	//get_ByteVC1_get_frame_stride_return()
+//	sava_input_buff(lib)   //保存转yuv前的数据
+//	save_output_buff(lib)  //保存转完yuv后的数据
 }
 
-function byteVC1_dec_create(lib){
-	b(lib.add(0x1CBD8+1),ctx => {
-		
-	},ctx => {
-		send("reutn->")
-		tele(ctx.r0)
+function sava_input_buff(lib){
+	b(lib.add(0x7ba0+1),c => {
+		send("so size->"+parseInt(c.r2))
+		dump(c.r1)  //byte!!!
+		writeFile(Memory.readByteArray(c.r1,parseInt(c.r2)),"prepare_to_yuv.log")
 	})	
 }
-function hook(lib){
-	b(lib.add(0x740a+1),ctx => {
-		send("r0->")
-		tele(ctx.r0)
-	})
-		
-}
 
-function byteVC1_dec_decode(lib){
-	var r2	
-	b(lib.add(0x1d1b0+1),ctx => {
-		r2 = ctx.r0
-		send("dec -> decode->r0")
-		tele(r2)
-	},ctx => {
-//		send("decode->r2")
-//		tele(r2.add(0x30))
+
+function hook(lib){
+	var addr 
+	b(lib.add(0x1FE70+1),ctx => {
+		printStack_so(ctx)
 	})
 }
 
@@ -69,53 +58,22 @@ function get_ByteVC1_get_frame_data_return(){
 	})
 }
 
-function bytevc1_get_ttframe_infos(lib){
-	var input_buff
-	var r0
-	b(lib.add(0x691c+1),ctx => {  //call bytevc1_get_ttframe_infos
-		r0 = ctx.r1
-		send("brfor->input_buff->"+r0)	
-		tele(r0)
-		tele(r0.add(0x28))
-		tele(r0.add(0x28).add(0x28))
-	},ctx => {
-	})
-}
-
-function get_width_height(lib){
-	var offset = 0x691c //onleave->(onenter->args[0])
-	b(lib.add(offset+1),
-		ctx => {
-			width = ctx.r0 
-		},ctx => {
-	//		if(mwidth!=null) return;
-			mwidth = width.add(0xc).readPointer()
-			mheight = width.add(0xc+0x4).readPointer()
-				send("width->"+mwidth)		
-				send("height->"+mheight)	
-		})
-}
 function save_output_buff(lib){
 	var offset = 0x6a40
 	var out_buffer 
-	b(lib.add(offset + 1),
-            ctx => {
-				//show_view(ctx.this.this)
+	var height
+	b(lib.add(offset + 1),ctx => {
+				height = ctx.sp.add(0x0018).readPointer()
+				if(parseInt(height) < 0x60) return;
 				send("out_buffer->"+ctx.r1+"["+idx+"]")
 				send("width->"+ctx.sp.add(0x0014).readPointer())
 				send("height->"+ctx.sp.add(0x0018).readPointer())
 				out_buffer = ctx.r1
-				idx++
             },ctx => {
-				send("insize->"+ctx.r0)
+				if(parseInt(height) < 0x60) return;
 				size = ctx.r0
+				send("size->"+size)
 				writeFile(Memory.readByteArray(out_buffer,parseInt(size)),"out_data_yuv.yuv")
 			})
 }
 
-function writeFile(content,file) {
-	var file = new File("/sdcard/"+file,"a+");//a+表示追加内容，此处的模式和c语言的fopen函数模式相同
-	file.write(content);
-	file.flush()
-	file.close();
-}
