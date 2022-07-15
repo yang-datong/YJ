@@ -1,33 +1,42 @@
 //-------------------------define-------------------------------
 //配置信息区
-var end_line_len
-var view_message 
-var view_stack 
-var view_code 
-var view_registers 
-var clear_tag 
-var tele_tag 
-var register_tag
-var init_segment_address_tag
+var END_LINE_LEN
+var VIEW_MESSAGE 
+var VIEW_STACK 
+var VIEW_CODE 
+var VIEW_TRACE
+var VIEW_REGISTERS 
+var CLEAR_TAG 
+var TELE_TAG 
+var CODE_TAG 
+var TRACE_TAG 
+var REGISTER_TAG
+var INIT_SEGMENT_ADDRESS_TAG
+var TELE_SHOW_ROW_NUMBER
 rpc.exports.init = mjson => {
-	end_line_len = mjson['end_line_len']
-	view_message = mjson['view_message']
-	view_stack = mjson['view_stack']
-	view_code = mjson['view_code']
-	view_registers = mjson['view_registers']
-	clear_tag = mjson['clear_tag']
-	tele_tag = mjson['tele_tag']
-	register_tag = mjson['register_tag']
-	init_segment_address_tag  = mjson['init_segment_address_tag']
+	END_LINE_LEN = mjson['end_line_len']
+	VIEW_MESSAGE = mjson['view_message']
+	VIEW_STACK = mjson['view_stack']
+	VIEW_CODE = mjson['view_code']
+	VIEW_TRACE = mjson['view_trace']
+	VIEW_REGISTERS = mjson['view_registers']
+	CLEAR_TAG = mjson['clear_tag']
+	CODE_TAG = mjson['code_tag']
+	TRACE_TAG = mjson['trace_tag']
+	TELE_TAG = mjson['tele_tag']
+	REGISTER_TAG = mjson['register_tag']
+	INIT_SEGMENT_ADDRESS_TAG  = mjson['init_segment_address_tag']
+	TELE_SHOW_ROW_NUMBER = mjson['tele_show_row_number']
 }
 //变量区
 var message_tag = " log "
 var _width = 70
-var step = 4
+var step = 4  //默认32bit
+var arch 
 
 const log = (...info) => {
-    var befor = new Array(_width - end_line_len - message_tag.length + 1).join("=")
-    var end = new Array(end_line_len).join("=")
+    var befor = new Array(_width - END_LINE_LEN - message_tag.length + 1).join("=")
+    var end = new Array(END_LINE_LEN).join("=")
     console.log(befor + message_tag + end + "\n")
 	console.log(...info);
 }
@@ -55,7 +64,7 @@ const dump = (...ptr) => {
 //-------------------------alias-------------------------------
 //以更简洁的方式调用（设置别名)
 function tele(...args){ show_telescope_view(...args)}
-function ls(ctx){ show_view(ctx)}
+function ls(ctx,lib_base){ show_view(ctx,lib_base)}
 
 //-------------------------func-------------------------------
 //监控内存数据
@@ -82,7 +91,7 @@ function b(...args){
 	Interceptor.attach(addr,{
             onEnter(args){
 				if(is_clear != undefined)
-				send(clear_tag)
+				send(CLEAR_TAG)
 				//show_view(this.context)
 				if(on_enter != undefined)
 					on_enter(this.context)
@@ -99,14 +108,14 @@ function show_telescope_view(...args){
 	var data = ""
 	var addr = args[0]
 	var _addr , ptr
-	for(var i = 0 ; i < 10; i++){  //该指针后的10个指针
+	for(var i = 0 ; i < TELE_SHOW_ROW_NUMBER; i++){  
 		_addr = addr.readPointer()
 		try{
 			ptr = _addr.readPointer()
 		}catch(error){
 			ptr = 0
 		}
-		data += (addr + "│" + (i*step) + "│" + _addr + "│" + ptr + tele_tag)
+		data += (addr + "│" + (i*step) + "│" + _addr + "│" + ptr + TELE_TAG)
 		addr = addr.add(step)
 	}
 	if(args[1] != null)
@@ -126,29 +135,61 @@ function show_registers(...args){
 		}catch(error){
 			ptr = 0
 		}
-		data += (key + "│" + addr + "│"  + ptr + register_tag)
+		data += (key + "│" + addr + "│"  + ptr + REGISTER_TAG)
 	}
-	send([data,view_registers])
+	send([data,VIEW_REGISTERS])
 }
 //向python块发送所需块数据
 function init_segment_address(context){
+	arch = " code:"+Process.arch+" "
+	step = Process.pointerSize 
 	var stack = context.sp
 	var code = context.pc
-	var data = stack + init_segment_address_tag + code
+	var data = stack + INIT_SEGMENT_ADDRESS_TAG + code + INIT_SEGMENT_ADDRESS_TAG + arch + INIT_SEGMENT_ADDRESS_TAG + step
 	send(data)
 }
 //显示所有布局视图 
-function show_view(context){
+function show_view(context,lib_base){
 	init_segment_address(context)  
-	show_registers(context,view_registers) 
-	show_telescope_view(context.sp,view_stack) //栈空间视图
+	show_registers(context) 
+	show_telescope_view(context.sp,VIEW_STACK) //栈空间视图
+	show_code_view(context)
+	//show_trace_view(context) //卡顿严重 暂时不开放!!!!
 }
+function show_trace_view(ctx){
+	var data = Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + TRACE_TAG
+	send([data,VIEW_TRACE])
+}
+
+function show_code_view(ctx){
+//	send("id->"+Process.id +
+//			"\narch->"+Process.arch + 
+//			"\nplatform->"+Process.platform +
+//			"\npageSize->"+Process.pageSize +
+//			"\nisDebuggerAttached->"+Process.isDebuggerAttached()+
+//			"\ngetCurrentThreadId->"+Process.getCurrentThreadId()+
+//			"\npointerSize->"+Process.pointerSize )
+	var lib = Process.getModuleByAddress(ctx.pc)
+	var name = lib.name
+	var base= lib.base
+	var path = lib.path
+	var offset = ctx.pc - parseInt(base)
+	var obj = {"name":name,
+				"base":base,
+				"path":path,
+				"offset":offset}
+
+	var data = JSON.stringify(obj) + CODE_TAG 
+	send([data,VIEW_CODE + arch]) //标记为送往code段的数据
+}
+
 //所有加载的so 
 function findAll(str,lib){
 	for(var i in lib){
-	console.log(str + lib[i] + "-> ",Module.findBaseAddress(lib[i]))
+		send(str + lib[i] + "-> ",Module.findBaseAddress(lib[i]))
 	}		
 }
+
 //so层栈回溯 
 function printStack_so(ctx){
 	send('So Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
@@ -184,7 +225,7 @@ function hook_libart() {
 						&& (name.indexOf("CheckJNI") == -1)
 						&& (name.indexOf("art") >= 0)) {
             if (name.indexOf("GetStringUTFChars") >= 0) {
-                console.log(name);
+                log(name);
                 // 获取到指定 jni 方法地址
                 GetStringUTFChars_addr = symbols[i].address;
             }}}

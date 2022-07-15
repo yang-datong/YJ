@@ -8,14 +8,18 @@ mjson = ""
 with open('./config.json', 'r') as file:
     mjson = json.load(file)
 end_line_len = mjson['end_line_len']
+code_show_row_number= mjson['code_show_row_number']
 view_message = mjson['view_message']
 view_stack = mjson['view_stack']
 view_code = mjson['view_code']
+view_trace = mjson['view_trace']
 view_registers = mjson['view_registers']
 
 clear_tag = mjson['clear_tag']
 tele_tag = mjson['tele_tag']
 register_tag = mjson['register_tag']
+code_tag = mjson['code_tag']
+trace_tag = mjson['trace_tag']
 init_segment_address_tag  = mjson['init_segment_address_tag']
 
 color_format_value_grey = mjson['color_format_value_grey']
@@ -52,6 +56,7 @@ def check_is_need_clear_view():
     if clear_tag in payload:
         print("\n"*100)
         print("\033[32m{0}\033[0m".format(wecome))
+        show_head_view_tips_info_color()
         return True
     else:
         return False 
@@ -79,6 +84,8 @@ def update_is_view_tag():
         message_tag = view_stack
     elif view_code in payload:
         message_tag = view_code
+    elif view_trace in payload:
+        message_tag = view_trace
     else:
         message_tag = " send "
     
@@ -95,7 +102,7 @@ def reset_send_payload(message):
         payload = message['payload']
 
 #改变文字的颜色
-def update_show_text_view_color(data,color,types):
+def update_show_text_view_style(data,color,types):
     if(types == tele_tag):
         if(color == color_format_value_pink or color == color_format_value_red):
             print("\033[36m{0}\033[0m│+{1}: \033[{3}m{2}\033[0m  →  {4}".format(data[0],"0x%04x" % int(data[1],10),"0x%08x" % int(data[2],16),color,"0x%08x" % int(data[3],16)))
@@ -115,13 +122,13 @@ def show_tele_view():
     for i in range(len(split)-1):
         data = split[i].split("│")
         if(int(data[2],16) == 0): #值为0 显示灰色
-            update_show_text_view_color(data,color_format_value_grey,tele_tag)
+            update_show_text_view_style(data,color_format_value_grey,tele_tag)
         elif(stack_base != 0 and hex(int(data[2],16) >>16<<16) == stack_base): 
-            update_show_text_view_color(data,color_format_value_pink,tele_tag)
+            update_show_text_view_style(data,color_format_value_pink,tele_tag)
         elif(code_base != 0 and hex(int(data[2],16) >>16<<16) == code_base): 
-            update_show_text_view_color(data,color_format_value_red,tele_tag)
+            update_show_text_view_style(data,color_format_value_red,tele_tag)
         else:
-            update_show_text_view_color(data,color_format_value_bule,tele_tag)
+            update_show_text_view_style(data,color_format_value_bule,tele_tag)
 
 #格式化显示registers内存信息
 def show_registers_view():
@@ -129,20 +136,49 @@ def show_registers_view():
     for i in range(len(split)-1):
         data = split[i].split("│")
         if(int(data[1],16) == 0): 
-            update_show_text_view_color(data,color_format_value_grey,register_tag)
+            update_show_text_view_style(data,color_format_value_grey,register_tag)
         elif(stack_base != 0 and hex(int(data[1],16) >>16<<16) == stack_base): 
-            update_show_text_view_color(data,color_format_value_pink,register_tag)
+            update_show_text_view_style(data,color_format_value_pink,register_tag)
         elif(code_base != 0 and hex(int(data[1],16) >>16<<16) == code_base): 
-            update_show_text_view_color(data,color_format_value_red,register_tag)
+            update_show_text_view_style(data,color_format_value_red,register_tag)
         else:
-            update_show_text_view_color(data,color_format_value_bule,register_tag)
+            update_show_text_view_style(data,color_format_value_bule,register_tag)
 
-#检查是只是打印初始化值
+
+def show_trace_view():
+    split = payload.split(trace_tag)
+    print(split)
+
+#获取目标源文件，进行反汇编代码获取
+def dump_target_binary(path,lib_name,row,offset):
+    result = os.popen("./.get_target_binary.sh "+path+" "+lib_name + " "+row + " " + offset)
+    return result.readlines()
+
+
+#格式化代码段视图
+def show_code_view():
+    split = payload.split(code_tag)
+    _json = json.loads(split[0])
+    offset = str(hex((_json["offset"]))).replace("0x","")
+    result = dump_target_binary(_json["path"],_json['name'],code_show_row_number,offset)
+    for i in range(len(result)):
+        data = result[i].replace("\n","")
+        if(i < int(code_show_row_number,10)):
+            print("   0x{0}".format(data))
+        elif(i == int(code_show_row_number,10)):
+            print(" → \033[32m0x{0}\033[0m".format(data))
+        else:
+            print("   \033[37m0x{0}\033[0m".format(data))
+    
+
+#检查是只是初始化值
 def check_is_init_segment_address():
     if init_segment_address_tag in payload:
-        global  stack_base,code_base
+        global  stack_base,code_base,view_code
         stack = payload.split(init_segment_address_tag)[0]
         code = payload.split(init_segment_address_tag)[1]
+        view_code = payload.split(init_segment_address_tag)[2]
+        step = payload.split(init_segment_address_tag)[3]
         stack_base = hex(int(stack,16) >> 16 << 16)
         code_base = hex(int(code,16) >> 16 << 16)
         return True
@@ -164,6 +200,10 @@ def on_message(message,data):
             show_tele_view()
         elif register_tag in payload:
             show_registers_view()
+        elif code_tag in payload:
+            show_code_view()
+        elif trace_tag in payload:
+            show_trace_view()
         else:
             payload = str(message['payload']) #还原数组
             print("\033[31m{0}\033[0m".format(payload))
@@ -180,7 +220,7 @@ process.enable_debugger()
 foot = ""
 with open("./frida_so.js") as jscode:
     foot += jscode.read()
-with open("./utli.js") as jscode:
+with open("./util.js") as jscode:
     foot += jscode.read()
 
 script = process.create_script(foot,runtime='v8')
