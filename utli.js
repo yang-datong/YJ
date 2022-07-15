@@ -81,12 +81,12 @@ function b(...args){
 }
 
 
-//显示一个指针视图
+//显示一个指针块视图 
 function show_telescope_view(...args){
 	var data = ""
 	var addr = args[0]
 	var _addr , ptr
-	for(var i = 0 ; i < 10; i++){
+	for(var i = 0 ; i < 10; i++){  //该指针后的10个指针
 		_addr = addr.readPointer()
 		try{
 			ptr = _addr.readPointer()
@@ -101,7 +101,7 @@ function show_telescope_view(...args){
 	else
 		send(data)
 }
-
+//寄存器视图
 function show_registers(...args){
 	var context = args[0]
 	var data = ""
@@ -117,37 +117,34 @@ function show_registers(...args){
 	}
 	send([data,view_registers])
 }
-
+//向python块发送所需块数据
 function init_segment_address(context){
 	var stack = context.sp
 	var code = context.pc
 	var data = stack + init_segment_address_tag + code
 	send(data)
 }
-
-
+//显示所有布局视图 
 function show_view(context){
-	init_segment_address(context)
-	show_registers(context,view_registers)
-	show_telescope_view(context.sp,view_stack)
+	init_segment_address(context)  
+	show_registers(context,view_registers) 
+	show_telescope_view(context.sp,view_stack) //栈空间视图
 }
-
-//------------------------- 所有加载的so -------------------------
-
+//所有加载的so 
 function findAll(str,lib){
 	for(var i in lib){
 	console.log(str + lib[i] + "-> ",Module.findBaseAddress(lib[i]))
 	}		
 }
-//------------------------- 栈回溯 -------------------------
-//
-//function printStack_so(ctx){
-//	send('Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
-//}
+//so层栈回溯 
+function printStack_so(ctx){
+	send('Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+}
+//Android层栈回溯 
 function printStack(){
 	console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
 }
-//------------------------- so的所有导出函数 -------------------------
+//so的所有导出函数 
 function export_func(so){
     var exports = Module.enumerateExportsSync(so);
      for(var i = 0; i < exports.length; i++) {
@@ -155,7 +152,7 @@ function export_func(so){
        send(exports[i].name + ": " + exports[i].address+",so->"+so);
     }
 }
-//------------------------- so的所有导入函数 -------------------------
+//so的所有导入函数 
 function import_func(so){
     var exports = Module.enumerateImportsSync(so);
      for(var i = 0; i < exports.length; i++) {
@@ -163,10 +160,9 @@ function import_func(so){
        send(exports[i].name + ": " + exports[i].address+",so->"+so);
     }
 }
-//------------------------- so的所有导入函数 -------------------------
+//so的所有导入函数 
 function hook_libart() {
     var GetStringUTFChars_addr = null;
-    // jni 系统函数都在 libart.so 中
     var module_libart = Process.findModuleByName("libart.so");
     var symbols = module_libart.enumerateSymbols();
     for (var i = 0; i < symbols.length; i++) {
@@ -180,12 +176,11 @@ function hook_libart() {
                 GetStringUTFChars_addr = symbols[i].address;
             }}}
 }
-
-//------------------------- 保存数据到文件-------------------------
+//保存数据到文件
 function writeFile(content,file_name) {
 	var file = new File("/sdcard/"+file_name,"w+");//a+表示追加内容，此处的模式和c语言的fopen函数模式相同
 	file.write(content);
 	file.flush()
 	file.close();
-	send("save: "+file_name+" is done!!")
+	send("-----> save: "+file_name+" is done!! <------")
 }

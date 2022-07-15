@@ -4,22 +4,22 @@ var width,mheight,mwidth
 var size
 
 //-------------------------mian-------------------------------
-//libByteVC1_dec_so("libByteVC1_dec.so")
+libByteVC1_dec_so("libByteVC1_dec.so")
 //libttheif_dec_so("libttheif_dec.so")
    //使用Java hook会导致明显延迟！！！！！！
-Java.perform(()=>{
-	Java.use("com.bytedance.fresco.nativeheif.Heif").toRgba.overload('[B', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int').implementation = function(v0,v1,v2,v3,v4,v5,v6,v7){
-		send("java_size->"+v1)
-		return  this.toRgba(v0,v1,v2,v3,v4,v5,v6,v7)
-	}	
-})
+//Java.perform(()=>{
+//	Java.use("com.bytedance.fresco.nativeheif.Heif").toRgba.overload('[B', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int').implementation = function(v0,v1,v2,v3,v4,v5,v6,v7){
+//		send("java_size->"+v1)
+//		return  this.toRgba(v0,v1,v2,v3,v4,v5,v6,v7)
+//	}	
+//})
 //-------------------------func-------------------------------
 function libByteVC1_dec_so(so){
 	var lib = Module.findBaseAddress(so)
 	while(lib == null){
 		lib = Module.findBaseAddress(so)
 	}
-	//hook(lib)
+	hook(lib)
 }
 
 function libttheif_dec_so(so){
@@ -27,8 +27,8 @@ function libttheif_dec_so(so){
 	while(lib == null){
 		lib = Module.findBaseAddress(so)
 	}
-//	sava_input_buff(lib)   //保存转yuv前的数据
-//	save_output_buff(lib)  //保存转完yuv后的数据
+	sava_input_buff(lib)   //保存转yuv前的数据
+	save_output_buff(lib)  //保存转完yuv后的数据
 }
 
 function sava_input_buff(lib){
@@ -73,7 +73,7 @@ function save_output_buff(lib){
 				if(parseInt(height) < 0x60) return;
 				size = ctx.r0
 				send("size->"+size)
-				writeFile(Memory.readByteArray(out_buffer,parseInt(size)),"out_data_yuv.yuv")
+				//writeFile(Memory.readByteArray(out_buffer,parseInt(size)),"out_data_yuv.yuv")
 			})
 }
 
