@@ -1,15 +1,29 @@
 //-------------------------define-------------------------------
-var end_line_len = 4
+//配置信息区
+var end_line_len
+var view_message 
+var view_stack 
+var view_code 
+var view_registers 
+var clear_tag 
+var tele_tag 
+var register_tag
+var init_segment_address_tag
+rpc.exports.init = mjson => {
+	end_line_len = mjson['end_line_len']
+	view_message = mjson['view_message']
+	view_stack = mjson['view_stack']
+	view_code = mjson['view_code']
+	view_registers = mjson['view_registers']
+	clear_tag = mjson['clear_tag']
+	tele_tag = mjson['tele_tag']
+	register_tag = mjson['register_tag']
+	init_segment_address_tag  = mjson['init_segment_address_tag']
+}
+//变量区
 var message_tag = " log "
-var _width 
-var register_tag = "register_tag"
-var tele_tag = "tele_tag"
-var view_registers = " registers "
-var view_stack = " stack "
-var view_code = " code "
+var _width = 70
 var step = 4
-var init_segment_address_tag  = "$$$$INIT_SEGMENT$$$$"
-var clear_tag = "$$$$clear_tag$$$$"
 
 const log = (...info) => {
     var befor = new Array(_width - end_line_len - message_tag.length + 1).join("=")
@@ -25,7 +39,6 @@ const dump = (...ptr) => {
 		return send(hexdump(ptr[0],{offset:0,length:ptr[1],header:true,ansi:true}))
 }
 //-------------------------init-------------------------------
-rpc.exports.init = config_info => { _width = config_info}
 //这里是配置信息 需要进行配置上下文对象 往后会对64位so进行支持!!!
 /**
 		send("id->"+Process.id +
@@ -138,11 +151,11 @@ function findAll(str,lib){
 }
 //so层栈回溯 
 function printStack_so(ctx){
-	send('Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+	send('So Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
 }
 //Android层栈回溯 
 function printStack(){
-	console.log(Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
+	send('Java Stack -> :\n' +Java.use("android.util.Log").getStackTraceString(Java.use("java.lang.Throwable").$new()));
 }
 //so的所有导出函数 
 function export_func(so){

@@ -2,17 +2,18 @@
 var idx = 0
 var width,mheight,mwidth
 var size
-
 //-------------------------mian-------------------------------
 libByteVC1_dec_so("libByteVC1_dec.so")
 //libttheif_dec_so("libttheif_dec.so")
    //使用Java hook会导致明显延迟！！！！！！
-//Java.perform(()=>{
-//	Java.use("com.bytedance.fresco.nativeheif.Heif").toRgba.overload('[B', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int').implementation = function(v0,v1,v2,v3,v4,v5,v6,v7){
-//		send("java_size->"+v1)
-//		return  this.toRgba(v0,v1,v2,v3,v4,v5,v6,v7)
-//	}	
-//})
+/**
+Java.perform(()=>{
+	Java.use("com.bytedance.fresco.nativeheif.Heif").toRgba.overload('[B', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int').implementation = function(v0,v1,v2,v3,v4,v5,v6,v7){
+		send("java_size->"+v1)
+		return  this.toRgba(v0,v1,v2,v3,v4,v5,v6,v7)
+	}	
+})
+*/
 //-------------------------func-------------------------------
 function libByteVC1_dec_so(so){
 	var lib = Module.findBaseAddress(so)
@@ -41,20 +42,8 @@ function sava_input_buff(lib){
 
 
 function hook(lib){
-	var addr 
 	b(lib.add(0x1FE70+1),ctx => {
-		printStack_so(ctx)
-	})
-}
-
-function get_ByteVC1_get_frame_stride_return(){
-	b(lib.add(0x6974+4+1),ctx => {
-		send("ByteVC1_get_frame_stride() return ->"+ctx.r0)
-	})
-}
-function get_ByteVC1_get_frame_data_return(){
-	b(lib.add(0x695c+4+1),ctx => {
-		send("ByteVC1_get_frame_data() return ->"+ctx.r0)
+		ls(ctx)
 	})
 }
 
@@ -76,4 +65,3 @@ function save_output_buff(lib){
 				//writeFile(Memory.readByteArray(out_buffer,parseInt(size)),"out_data_yuv.yuv")
 			})
 }
-

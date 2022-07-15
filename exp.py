@@ -1,35 +1,43 @@
 #!/usr/bin/python3
 # -*- coding: UTF-8 -*-
-import frida,sys,os
+import frida,sys,os,json
 
-width = int(os.get_terminal_size().columns)
-message_tag = " send "
-end_line_len = 4
-tele_tag = "tele_tag"
-register_tag = "register_tag"
-view_registers = " registers "
-view_stack = " stack "
-view_code = " code "
-stack_base = 0
-code_base = 0
-color_format_value_grey = "0"
-color_format_value_red = "31" 
-color_format_value_green = "32"
-color_format_value_yellow = "33"
-color_format_value_bule = "34"
-color_format_value_pink = "35"
-color_format_value_cyan = "36"
-init_segment_address_tag  = "$$$$INIT_SEGMENT$$$$"
-clear_tag = "$$$$clear_tag$$$$"
-architecture_bit = 32  #架构位数 目前只是在32位lib中测试过 
-step = 32/8 
-payload = ""
+
+#----------获取配置信息
+mjson = ""
+with open('./config.json', 'r') as file:
+    mjson = json.load(file)
+end_line_len = mjson['end_line_len']
+view_message = mjson['view_message']
+view_stack = mjson['view_stack']
+view_code = mjson['view_code']
+view_registers = mjson['view_registers']
+
+clear_tag = mjson['clear_tag']
+tele_tag = mjson['tele_tag']
+register_tag = mjson['register_tag']
+init_segment_address_tag  = mjson['init_segment_address_tag']
+
+color_format_value_grey = mjson['color_format_value_grey']
+color_format_value_red = mjson['color_format_value_red']
+color_format_value_green = mjson['color_format_value_green']
+color_format_value_yellow = mjson['color_format_value_yellow']
+color_format_value_bule = mjson['color_format_value_bule']
+color_format_value_pink = mjson['color_format_value_pink']
+color_format_value_cyan = mjson['color_format_value_cyan']
+
 wecome = """
  _      _______________  _  ____  _______  __  __   __
 | | /| / / __/ ___/ __ \/ |/ /  |/  / __/  \ \/ /_ / /
 | |/ |/ / _// /__/ /_/ /    / /|_/ / _/     \  / // /
 |__/|__/___/\___/\____/_/|_/_/  /_/___/     /_/\___/ 
 """
+width = int(os.get_terminal_size().columns)
+stack_base = 0
+code_base = 0
+step = 4
+payload = ""
+
 print("\033[32m{0}\033[0m".format(wecome))
 
 #显示头部颜色代表数据说明信息
@@ -162,6 +170,8 @@ def on_message(message,data):
     else:
         print(message)
 
+
+
 device = frida.get_usb_device()
 process = device.attach('抖音') 
 process.enable_debugger()
@@ -178,6 +188,6 @@ script = process.create_script(foot,runtime='v8')
 script.on('message',on_message)
 script.load()
 show_head_view_tips_info_color()
-script.exports.init(width) #对应js脚本的hook函数init()
+script.exports.init(mjson) #对应js脚本的hook函数init()
 #device.resume(pid)  #对应挂起函数调用
 sys.stdin.read()
