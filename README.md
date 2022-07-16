@@ -19,17 +19,14 @@ After upgrading v2.0, you need to install Linux- > objdump under Mac, which curr
 
 ## Use
 
-├── .YJ
-│   ├── lib.so
-│   └── lib\.so.asm
-├── README.md
-├── exp.py
-├── frida_so.js
-├── get_target_binary.sh
-├── style
-│   ├── config.json
-│   └── layout.py
-└── util.js
+**├── README.md**
+**├── exp.py**
+**├── frida_so.js**
+**├── get_target_binary.sh**
+**├── style**
+**│   ├── config.json**
+**│   └── layout.py**
+**└── util.js**
 
 `exp.py` -> It is a layout debugger and, of course, a script container for Frida
 
@@ -49,9 +46,9 @@ After upgrading v2.0, you need to install Linux- > objdump under Mac, which curr
 
 ## Screenshot
 
-![image-20220716172144302](../../Library/Application Support/typora-user-images/image-20220716172144302.png)
+![image-20220716172144302](./image_one.png)
 
-![image-20220716172219462](../../Library/Application Support/typora-user-images/image-20220716172219462.png)
+![image-20220716172219462](./image_two.png)
 
 ## Conclusion
 
