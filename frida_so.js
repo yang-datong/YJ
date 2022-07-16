@@ -3,8 +3,8 @@ var idx = 0
 var width,mheight,mwidth
 var size
 //-------------------------mian-------------------------------
-//libByteVC1_dec_so("libByteVC1_dec.so")
-libttheif_dec_so("libttheif_dec.so")
+libByteVC1_dec_so("libByteVC1_dec.so")
+//libttheif_dec_so("libttheif_dec.so")
    //使用Java hook会导致明显延迟！！！！！！
 /**
 Java.perform(()=>{
@@ -20,7 +20,7 @@ function libByteVC1_dec_so(so){
 	while(lib == null){
 		lib = Module.findBaseAddress(so)
 	}
-	//hook(lib)
+	hook(lib)
 }
 
 function libttheif_dec_so(so){
