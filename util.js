@@ -186,13 +186,15 @@ function show_code_view(ctx){
 //所有加载的so 
 function findAll(str,lib){
 	for(var i in lib){
-		send(str + lib[i] + "-> ",Module.findBaseAddress(lib[i]))
-	}		
+		send(str + lib[i] + "-> "+Module.findBaseAddress(lib[i]))
+	}
 }
 
 //so层栈回溯 
 function printStack_so(ctx){
 	send('So Stack -> :\n' +Thread.backtrace(ctx, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+	//log('So Stack -> :\n' +Thread.backtrace(this.context, Backtracer.ACCURATE).map(DebugSymbol.fromAddress).join('\n') + '\n');
+
 }
 //Android层栈回溯 
 function printStack(){
@@ -202,17 +204,24 @@ function printStack(){
 function export_func(so){
     var exports = Module.enumerateExportsSync(so);
      for(var i = 0; i < exports.length; i++) {
+       send(exports[i].name + ": " + exports[i].address+",so->"+so);
+			 b(exports[i].address.add(1),c=>{
+			 	send(exports[i].name)
+			 })
+
          if(exports[i].name == "ByteVC1_dec_create")
        send(exports[i].name + ": " + exports[i].address+",so->"+so);
     }
 }
-//so的所有导入函数 
-function import_func(so){
+
+function import_func(so,target){
+		//so的所有导入函数 
     var exports = Module.enumerateImportsSync(so);
      for(var i = 0; i < exports.length; i++) {
-         if(exports[i].name == "ByteVC1_dec_create")
-       send(exports[i].name + ": " + exports[i].address+",so->"+so);
-    }
+       //send(exports[i].name + ": " + exports[i].address+",so->"+so);
+         if(exports[i].name == target)
+				 send("Find!!!"+so+"->"+exports[i].name)
+	}
 }
 //so的所有导入函数 
 function hook_libart() {
@@ -237,4 +246,25 @@ function writeFile(content,file_name) {
 	file.flush()
 	file.close();
 	send("-----> save: "+file_name+" is done!! <------")
+}
+
+function calss_methods(){
+//hook类的所有方法
+        var md5Util=Java.use("com.ss.texturerender.VideoSurfaceTexture");
+        var methods=md5Util.class.getDeclaredMethods();
+        for(var j=0;j<methods.length;j++){
+            var methodName=methods[j].getName();
+            console.log(methodName);
+
+            //这里遍历方法的所有重载
+            for(var i=0;i<md5Util[methodName].overloads.length;i++){
+                md5Util[methodName].overloads[i].implementation=function(){
+                    for(var k=0;k<arguments.length;k++){
+                        console.log(arguments[k]);
+                    }
+                    //这里需要调用原来的方法，但是原来的方法的参数个数不确定，所以需要使用到arguments
+                    return this[methodName].apply(this,arguments);
+                }
+            }
+        }
 }
