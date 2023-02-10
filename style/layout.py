@@ -174,7 +174,7 @@ def get_config_info():
 
 #获取目标源文件，进行反汇编代码获取
 def dump_target_binary(path,lib_name,row,offset):
-    result = os.popen("./get_target_binary.sh "+path+" "+lib_name + " "+row + " " + offset)
+    result = os.popen("./commond/get_target_binary.sh "+path+" "+lib_name + " "+row + " " + offset)
     return result.readlines()
 
 

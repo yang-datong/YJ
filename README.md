@@ -46,9 +46,9 @@ After upgrading v2.0, you need to install Linux- > objdump under Mac, which curr
 
 ## Screenshot
 
-![image-20220716172144302](./image_one.png)
+![image-20220716172144302](./images/image_one.png)
 
-![image-20220716172219462](./image_two.png)
+![image-20220716172219462](./images/image_two.png)
 
 ## Conclusion
 

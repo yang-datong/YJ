@@ -3,6 +3,11 @@
 from style.layout import *
 import frida,sys
 
+
+mainFile = "./frida_so.js"
+if (len(sys.argv) > 1):
+    mainFile = sys.argv[1]
+
 layout = LayoutView() #Init Sytle Theme
 
 def on_message(message,data):
@@ -36,9 +41,9 @@ process.enable_debugger()
 #pid = device.spawn("com.android.providers.downloads.ui", activity="com.android.providers.downloads.ui.DownloadList") #使用挂起调试时才用
 
 foot = ""
-with open("./frida_so.js") as jscode:
+with open(mainFile) as jscode:
     foot += jscode.read()
-with open("./util.js") as jscode:
+with open("./commond/util.js") as jscode:
     foot += jscode.read()
 
 script = process.create_script(foot,runtime='v8')
